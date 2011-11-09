@@ -37,7 +37,7 @@ var w = 30; //width of each icon
 /*
   Import icons into the document. This uses the file named sound.pdf
 */
-this.importIcon("sound", "snd.pdf",1);
+this.importIcon("sound", "snd.pdf",0);
 
 //var folderPath = /.*\//i.exec(this.URL);
 var i = 0;
