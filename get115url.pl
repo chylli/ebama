@@ -12,7 +12,9 @@ use Data::Dumper;
 use HTML::TreeBuilder;
 use URI::Escape;
 
-my $file = shift;
+my $file = shift || die "need a html file to get 115 links\n";
+
+
 
 my @urls ;
 my $download = 1;
