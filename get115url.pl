@@ -1,13 +1,20 @@
 #!/usr/bin/perl -w
 use strict;
 use warnings;
+use utf8;
+use feature 'say';
+
+use Encode qw(encode decode);
 
 use LWP::Simple;
 use HTML::LinkExtor;
-$| = 1;
+use Data::Dumper;
+use HTML::TreeBuilder;
+use URI::Escape;
+
+my $file = shift;
 
 my @urls ;
-my @urls2;
 my $download = 1;
 
 sub cb {
@@ -17,49 +24,66 @@ sub cb {
     }
 }
 
-sub cb2 {
-    my ($tag, %attr) = @_;
-    if ($tag eq 'a' && $attr{href} && $attr{href} =~ /down_group/ ) {
-        push @urls2, $attr{href};
-    }
-
-}
 
 my $p = HTML::LinkExtor->new(\&cb);
-$p->parse_file("a.html");
+$p->parse_file($file);
 
 
 for my $u (@urls) {
-    print "processing $u\n";
+    say "processing $u";
     
 
     if ($download == 0) {
         if ($u =~ 'e6a7to82#') {
             $download = 1;
         }
-        print "dont download $u\n";
+        say "dont download $u";
         
         next;
     }
     #print "\n\ndoing $u...\n";
     
-    my $content = get ($u);
-
+    my $content = get $u;#decode('UTF-8', get $u);
+    #say "utf8 : " . utf8::is_utf8($content);
+    
     unless (defined($content)) {
         warn "cannot get $u\n";
         next;
     }
-    my $p2 = HTML::LinkExtor->new(\&cb2);
-    $p2->parse($content);
-    #print $urls2[0],"\n";
-    $urls2[0] =~ /file=(.*)$/;
-    my $file = $1;
+    my $itemTree = HTML::TreeBuilder->new_from_content($content);
 
-    print "downloading $file\n";
-#    sleep 35;
-    `wget -c -O $file "$urls2[0]"`;
+#    $itemTree->dump;
 
-    @urls2 = ();
+    my @urlInfos = $itemTree->look_down(
+        "_tag" => "a",
+        "class" => "btn",
+        "href" => qr/down_group/,
+                                 );
+    foreach (@urlInfos) {
+        my ($a) = $_->content_list;
+        #say Dumper($a);
+        
+        #say encode("utf-8",$a);
+        
+
+        
+        
+        #print Dumper($_->attr("_content"));
+        
+    }
+    my ($unicomurl) = grep {my ($a) = $_->content_list; $a =~ /联通/} @urlInfos;
+    unless ($unicomurl) {
+        $unicomurl = $urlInfos[0];
+    }
+    #$unicomurl->dump;
+    say encode("utf-8",($unicomurl->content_list)[0]);
+    my $urlstring = $unicomurl->attr("href");
+    $urlstring =~ /file=(.*)$/;
+    my $outfile = $1;
+    $outfile = uri_unescape($outfile);
+    
+    `wget -c -O $outfile "$urlstring"`;
+    $itemTree->destroy;
     
 }
 
