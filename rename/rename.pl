@@ -4,10 +4,12 @@ use warnings;
 use feature 'say';
 
 use File::Copy;
-use PDF::API2;
+#use PDF::API2;
 
 my $basedir = "pdf";
 my %processed;
+
+open(my $log,">renamemap.txt");
 
 mkdir $basedir;
 
@@ -21,57 +23,27 @@ while (my $rec = <$fh>) {
     @info{qw(name gradeName number)} = ($1,$2,$3);
     $info{name} =~ s/-/ /g;
 
-    my $baseNumber;
-    $info{number} =~ /(.*)_e/;
-    $baseNumber = $1;
-    $info{baseNumber} = $baseNumber;
-
-    if (exists $processed{$baseNumber}) {
-        copyBook(\%info);
-    }
-    else {
-        processBook(\%info);
-    }
-    
-
-
+    copyBook(\%info);
     
 }
 
 sub copyBook{
-    say "copying";
-
-}
-
-sub processBook{
     my $info = shift;
     
-    say "processing $info->{baseNumber}";
+    my $oldname = "$info->{number}.pdf";
+    my $newname = newName($info);
     
 
-    my $newName = newName($info);
-    my $namepattern = "$info->{baseNumber}_e*.pdf";
-    
-    my @pdffiles = glob($namepattern);
-    @pdffiles = sort {$a cmp $b} @pdffiles;
 
-    return unless @pdffiles;
-    
 
-    my $newpdf = PDF::API2->new();
-    foreach my $pdf (@pdffiles) {
-        say "merging $pdf";
-        
-        my $oldpdf = PDF::API2->open($pdf);
-        for my $pnumber (1 .. $oldpdf->pages()) {
-            $newpdf->importpage($oldpdf,$pnumber,0);
-        }
+    if (-e $oldname) {
+        say $log "$info->{number} -> $info->{name}";
+        copy($oldname, $newname);
     }
-    $newpdf->saveas($newName);
-    $processed{$info->{baseNumber}} = $newName;
-    say "$info->{baseNumber}: $newName processed" ;
-    
+
+
 }
+
 
 sub newName {
     my $info = shift;
@@ -81,8 +53,16 @@ sub newName {
         mkdir $newdir;
     }
     my $name = $info->{name};
-    my $newName = "$newdir/$name.pdf";
-    $info->{newName} = $newName;
+    my $newName = $info->{number};
+
+    #say "name: $name; Number: $info->{number}";
+    
+
+    $newName  =~ s/(.*)_e/$info->{name}_e/g;
+
+    $newName = "$newdir/$newName.pdf";
+    #say "newname: $newName";
+    
     return $newName;
 }
 
