@@ -21,7 +21,7 @@ my $download = 1;
 
 sub cb {
     my ($tag, %attr) = @_;
-    if ($tag eq 'a' && $attr{href} && $attr{href} =~ /115.com/) {
+    if ($tag eq 'a' && $attr{href} && $attr{href} =~ /115.com\/file/) {
         push @urls, $attr{href};
     }
 }
